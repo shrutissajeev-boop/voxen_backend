@@ -1,0 +1,10 @@
+{
+  "providers": {
+    "openrouter": {
+      "base_url": "https://openrouter.ai/api/v1/chat/completions",
+      "api_key": "your-openrouter-api-key-here",
+      "default_model": "deepseek/deepseek-r1-0528-qwen3-8b:free"
+    }
+  },
+  "default_provider": "openrouter"
+}

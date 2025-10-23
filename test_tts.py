@@ -1,32 +1,27 @@
-#!/usr/bin/env python3
-"""
-Simple TTS test script to verify pyttsx3 is working correctly
-"""
+# test_tts.py
 import pyttsx3
-import atexit
 
-def cleanup_tts():
-    """Clean up TTS engine properly"""
-    try:
-        if 'engine' in globals() and engine:
-            engine.stop()
-    except:
-        pass
+def test_voices():
+    engine = pyttsx3.init()
+    voices = engine.getProperty("voices")
 
-# Initialize TTS engine
-engine = pyttsx3.init()
-engine.setProperty("rate", 170)
-engine.setProperty("volume", 1.0)
+    print("🔊 Available voices:")
+    for i, v in enumerate(voices):
+        print(f"{i}: {v.name} ({v.id})")
 
-# Register cleanup function
-atexit.register(cleanup_tts)
+    # Test first voice
+    if voices:
+        print(f"\n🧪 Testing first voice: {voices[0].name}")
+        engine.setProperty("voice", voices[0].id)
+        engine.say("Hello Shruti, I am the first available voice.")
+        engine.runAndWait()
 
-def test_tts():
-    """Test TTS functionality"""
-    print("🔊 Testing TTS...")
-    engine.say("Hello! This is a test of the text to speech system.")
-    engine.runAndWait()
-    print("✅ TTS test completed successfully!")
+    # Test last voice
+    if len(voices) > 1:
+        print(f"\n🧪 Testing last voice: {voices[-1].name}")
+        engine.setProperty("voice", voices[-1].id)
+        engine.say("Hello Shruti, I am the last available voice.")
+        engine.runAndWait()
 
 if __name__ == "__main__":
-    test_tts()
+    test_voices()

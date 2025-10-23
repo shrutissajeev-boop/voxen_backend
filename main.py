@@ -63,6 +63,12 @@ def listen_and_transcribe():
     return text
 
 # ----------------------------
+<<<<<<< HEAD
+=======
+# Get AI Response
+# ----------------------------
+# ----------------------------
+>>>>>>> ef90493 (Add FastAPI server, comprehensive README, and updated dependencies)
 # Get AI Response with Fallback
 # ----------------------------
 def ask_ai(prompt):

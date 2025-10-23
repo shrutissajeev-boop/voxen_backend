@@ -151,6 +151,7 @@ temp/
 *key*
 *token*
 config.py
+config.json
 secrets.json
 
 # Large model files
