@@ -63,9 +63,6 @@ def listen_and_transcribe():
     return text
 
 # ----------------------------
-# Get AI Response
-# ----------------------------
-# ----------------------------
 # Get AI Response with Fallback
 # ----------------------------
 def ask_ai(prompt):
