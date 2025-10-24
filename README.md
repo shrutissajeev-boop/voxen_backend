@@ -62,7 +62,7 @@ A FastAPI-based speech-to-speech AI assistant that uses Whisper for speech recog
 
 Start the FastAPI server:
 ```bash
-uvicorn server:app --reload --host 0.0.0.0 --port 8000
+uvicorn server:app --reload --port 8000
 ```
 
 The server will be available at `http://localhost:8000`
