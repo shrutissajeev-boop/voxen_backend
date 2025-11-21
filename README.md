@@ -1,7 +1,5 @@
-<<<<<<< HEAD
 # voxen_backend
 it contains the whisper and piper code
-=======
 # Voxen Backend - Speech-to-Speech AI Assistant
 
 A FastAPI-based speech-to-speech AI assistant that uses Whisper for speech recognition, OpenRouter for AI responses, and pyttsx3 for text-to-speech synthesis.
@@ -187,4 +185,3 @@ Contributions, issues, and feature requests are welcome!
 ## ⭐ Show your support
 
 Give a ⭐️ if this project helped you!
->>>>>>> ef90493 (Add FastAPI server, comprehensive README, and updated dependencies)
