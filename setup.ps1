@@ -100,8 +100,12 @@ Write-Success "Virtual environment pip.exe found"
 
 # Step 4: Upgrade pip, setuptools, wheel, and build
 Write-Header "Step 4: Upgrading Core Tools in Virtual Environment"
-
 Write-Info "Upgrading pip to latest version..."
+
+# Temporarily relax error action for external pip commands in this section
+$prevEAP = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
+
 & $pipExe install --upgrade pip 2>&1 | Out-Null
 if ($LASTEXITCODE -ne 0) {
     Write-Warning-Custom "pip upgrade had issues, but continuing..."
@@ -121,6 +125,9 @@ if ($LASTEXITCODE -ne 0) {
     Write-Warning-Custom "wheel/build install had issues, but continuing..."
 }
 Write-Success "wheel and build tools installed"
+
+# Restore previous ErrorActionPreference
+$ErrorActionPreference = $prevEAP
 
 # Step 5: Install FFmpeg (optional, required for Whisper)
 Write-Header "Step 5: Checking FFmpeg Installation (Optional, Required for Whisper)"
@@ -152,6 +159,10 @@ if ($ffmpegTest -like "ffmpeg*") {
 Write-Header "Step 6: Installing PyAudio (Audio Input/Output)"
 
 Write-Info "Installing PyAudio via pip..."
+## Relax error preference for pip operations in this block so they don't terminate the script
+$prevEAP = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
+
 & $pipExe install pyaudio 2>&1 | Out-Null
 
 if ($LASTEXITCODE -eq 0) {
@@ -168,6 +179,9 @@ if ($LASTEXITCODE -eq 0) {
     }
 }
 
+# Restore previous ErrorActionPreference
+$ErrorActionPreference = $prevEAP
+
 # Step 7: Install Python dependencies
 Write-Header "Step 7: Installing Python Dependencies from requirements.txt"
 
@@ -178,7 +192,11 @@ if (-not (Test-Path "requirements.txt")) {
 
 Write-Info "Installing all packages..."
 Write-Info "First installing build essentials..."
+## Temporarily relax error handling for this pip invocation
+$prevEAP = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
 & $pipExe install --upgrade setuptools wheel build 2>&1 | Out-Null
+$ErrorActionPreference = $prevEAP
 
 Write-Info "Installing packages from requirements.txt..."
 $ErrorActionPreference = "Continue"
@@ -263,6 +281,9 @@ Write-Header "Step 11: Checking Optional Packages"
 $optionalPackages = @("whisper", "torch")
 
 Write-Info "Checking optional packages (installation not required)..."
+## Allow pip show to fail without terminating the script
+$prevEAP = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
 foreach ($package in $optionalPackages) {
     Write-Info "Checking: $package"
     & $pipExe show $package 2>&1 | Out-Null
@@ -273,6 +294,7 @@ foreach ($package in $optionalPackages) {
         Write-Warning-Custom "$package is not installed (optional - can be installed manually later)"
     }
 }
+$ErrorActionPreference = $prevEAP
 
 # Success!
 Write-Header "Setup Complete!"
