@@ -4,160 +4,103 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
-A FastAPI-based speech-to-speech AI backend that combines speech recognition, LLM reasoning, and text-to-speech synthesis. The system supports multiple AI providers (Ollama, OpenRouter, OpenAI) with intelligent provider switching and fallback logic.
-
-## 📋 Table of Contents
-
-- [Quick Start](#quick-start)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Project Structure](#project-structure)
-- [Configuration](#configuration)
-- [Running the Server](#running-the-server)
-- [API Endpoints](#api-endpoints)
-- [Provider Switching](#provider-switching)
-- [Troubleshooting](#troubleshooting)
-- [Contributing](#contributing)
-
----
+A FastAPI-based speech-to-speech AI backend that combines Whisper speech recognition, LLM reasoning (Ollama/OpenRouter/OpenAI), and pyttsx3 text-to-speech synthesis. Fully automated setup on Windows with a single command.
 
 ## 🚀 Quick Start
 
-### Clone and Setup (One Command)
+### Windows (Automated Setup - One Command)
+
+```powershell
+./setup.ps1
+```
+
+This script automatically:
+- ✅ Creates a Python virtual environment
+- ✅ Installs FFmpeg (required for Whisper)
+- ✅ Installs PortAudio and PyAudio
+- ✅ Installs all Python dependencies
+- ✅ Creates necessary project directories
+- ✅ Validates the installation
+
+**After setup completes, activate the environment and run:**
+```powershell
+.\.env\Scripts\Activate
+python -m uvicorn server:app --reload
+```
+
+Server runs at: **http://127.0.0.1:8000**
+
+### macOS/Linux (Manual Setup)
 
 ```bash
-# Clone the repository
+# Clone and navigate
 git clone https://github.com/shrutissajeev-boop/voxen_backend.git
 cd voxen_backend
 
-# One-line setup (Windows PowerShell)
-python -m venv .env; .env\Scripts\Activate; pip install -r requirements.txt
-
-# One-line setup (macOS/Linux Bash)
-python3 -m venv .env && source .env/bin/activate && pip install -r requirements.txt
-```
-
-### Run the Server
-
-```bash
-# Activate virtual environment (if not already active)
-# Windows:
-.env\Scripts\Activate
-# macOS/Linux:
-source .env/bin/activate
-
-# Start the server
-python -m uvicorn server:app --host 127.0.0.1 --port 8000
-
-# Server will be available at: http://127.0.0.1:8000
-```
-
----
-
-## 📦 Prerequisites
-
-Before running the project, ensure you have installed:
-
-### **1. Python (3.8 or later)**
-- **Windows/macOS/Linux:** Download from [python.org](https://www.python.org/downloads/)
-- **Verify installation:**
-  ```bash
-  python --version  # Should output Python 3.8+
-  ```
-
-### **2. Git**
-- **Windows:** Download from [git-scm.com](https://git-scm.com/)
-- **macOS:** `brew install git`
-- **Linux:** `sudo apt install git`
-- **Verify installation:**
-  ```bash
-  git --version
-  ```
-
-### **3. External Dependencies & Tools**
-
-| Component | Purpose | Installation |
-|-----------|---------|--------------|
-| **PyAudio** | Audio input/output for speech recognition | Installed via pip (requires system audio libraries) |
-| **Ollama** (optional) | Local LLM inference | Download from [ollama.ai](https://ollama.ai) |
-| **FFmpeg** (optional) | Audio processing | `brew install ffmpeg` (macOS) or `choco install ffmpeg` (Windows) |
-
-### **4. System Audio Libraries (Required for PyAudio)**
-
-**Windows:**
-```bash
-# PyAudio should install automatically; if issues occur, use:
-pip install pipwin
-pipwin install pyaudio
-```
-
-**macOS:**
-```bash
-brew install portaudio
-```
-
-**Linux (Ubuntu/Debian):**
-```bash
-sudo apt-get install python3-dev portaudio19-dev
-```
-
----
-
-## 📥 Installation
-
-### Step 1: Clone the Repository
-
-```bash
-git clone https://github.com/shrutissajeev-boop/voxen_backend.git
-cd voxen_backend
-```
-
-### Step 2: Create a Virtual Environment
-
-**Windows (PowerShell):**
-```bash
-python -m venv .env
-.env\Scripts\Activate
-```
-
-**macOS/Linux (Bash):**
-```bash
+# Create virtual environment
 python3 -m venv .env
 source .env/bin/activate
-```
 
-### Step 3: Install Dependencies
+# Upgrade pip and tools
+pip install --upgrade pip
+pip install "setuptools<81"
+pip install wheel build
 
-```bash
+# Install system dependencies (macOS)
+brew install ffmpeg portaudio
+
+# Install system dependencies (Linux - Ubuntu/Debian)
+sudo apt-get install ffmpeg python3-dev portaudio19-dev
+
+# Install Python packages
 pip install -r requirements.txt
-```
 
-This installs:
-- **Core AI/Speech Libraries:** Whisper, SpeechRecognition, pyttsx3, PyAudio
-- **Web Framework:** FastAPI, Uvicorn
-- **ML Libraries:** PyTorch, NumPy
-- **Utilities:** Requests, Pydantic
-
-### Step 4: Create Necessary Folders
-
-```bash
-# Create folders for models, data, and temporary files
+# Create directories
 mkdir -p models logs temp
+
+# Run server
+python -m uvicorn server:app --reload
 ```
 
-### Step 5 (Optional): Set Up Local Ollama
+---
 
-If you want to use Ollama as your primary AI provider:
+## 📦 What Gets Installed
 
-1. **Download and install Ollama** from [ollama.ai](https://ollama.ai)
-2. **Start the Ollama service:**
-   ```bash
-   ollama serve
-   ```
-3. **In another terminal, pull a model:**
-   ```bash
-   ollama pull qwen2.5:0.5b  # or your preferred model
-   ```
+### System-Level Dependencies
+| Component | Purpose | Installed By |
+|-----------|---------|--------------|
+| **FFmpeg** | Audio processing for Whisper | setup.ps1 (Windows) |
+| **PortAudio** | Audio hardware interface | setup.ps1 (Windows) |
+
+### Python Packages (from requirements.txt)
+| Package | Purpose |
+|---------|---------|
+| **fastapi** | Web framework & API server |
+| **uvicorn** | ASGI server |
+| **openai-whisper** | Speech-to-text recognition |
+| **pyttsx3** | Text-to-speech synthesis |
+| **SpeechRecognition** | Microphone input capture |
+| **pyaudio** | Audio I/O library |
+| **requests** | HTTP client |
+| **pydantic** | Data validation |
+| **torch** | ML framework (for Whisper) |
+| **numpy** | Numerical computing |
+
+---
+
+## 📋 Prerequisites
+
+### Windows
+- Python 3.8 or later
+- PowerShell 5.0+
+- Internet connection (to download FFmpeg, PortAudio, and packages)
+- ~2GB disk space for dependencies
+
+### macOS/Linux
+- Python 3.8 or later
+- Bash shell
+- Homebrew (macOS) or apt (Linux)
+- Internet connection
 
 ---
 
@@ -165,35 +108,25 @@ If you want to use Ollama as your primary AI provider:
 
 ```
 voxen_backend/
+├── setup.ps1                 # Automated Windows setup script (NEW!)
 ├── server.py                 # Main FastAPI application
 ├── llm_client.py             # LLM provider abstraction layer
-├── main.py                   # Speech recognition & transcription
-├── config.json               # Configuration file (providers, models, settings)
+├── main.py                   # Speech recognition & TTS utilities
+├── config.json               # Configuration (providers, models)
 ├── requirements.txt          # Python dependencies
 ├── README.md                 # This file
-├── .env/                     # Virtual environment (created during setup)
-├── models/                   # Cached AI models (Whisper, etc.)
+├── .env/                     # Virtual environment (created by setup.ps1)
+├── models/                   # Cached Whisper models
 ├── logs/                     # Application logs
 ├── temp/                     # Temporary audio files
-├── node_modules/             # JavaScript dependencies (frontend only)
-└── package.json              # JavaScript dependencies
+└── package.json              # Frontend dependencies
 ```
-
-### Folder Purposes
-
-| Folder | Purpose |
-|--------|---------|
-| `.env/` | Python virtual environment (isolated dependencies) |
-| `models/` | Cached Whisper and other model files |
-| `logs/` | Server and application logs |
-| `temp/` | Temporary audio files during processing |
-| `node_modules/` | Frontend JavaScript libraries (if applicable) |
 
 ---
 
 ## ⚙️ Configuration
 
-### `config.json` - Provider Configuration
+### `config.json` - Provider Setup
 
 ```json
 {
@@ -206,11 +139,11 @@ voxen_backend/
     },
     "openrouter": {
       "base_url": "https://openrouter.ai/api/v1",
-      "api_key": "sk-or-v1-YOUR-API-KEY",
+      "api_key": "",
       "default_model": "meta-llama/llama-3.1-70b-instruct"
     },
     "openai": {
-      "api_key": "sk-YOUR-OPENAI-KEY",
+      "api_key": "",
       "default_model": "gpt-4o"
     }
   },
@@ -220,39 +153,49 @@ voxen_backend/
 }
 ```
 
-### Configuration Options
+### Option 1: Use Ollama (Recommended for Local Development)
 
-| Option | Description |
-|--------|-------------|
-| `default_provider` | Primary LLM provider (ollama, openrouter, openai) |
-| `fallback_provider` | Backup provider if primary fails |
-| `force_cpu` | Use CPU instead of GPU (set to `true` for stability) |
-| `num_gpu` | Number of GPUs for Ollama (0 = CPU only) |
-| `num_ctx` | Context window size for Ollama models |
+1. **Download Ollama** from [ollama.ai](https://ollama.ai)
+2. **Start Ollama service:**
+   ```bash
+   ollama serve
+   ```
+3. **Pull a model in another terminal:**
+   ```bash
+   ollama pull qwen2.5:0.5b
+   ```
+4. **Server will auto-use Ollama** (free, no API key needed!)
 
-### Setting API Keys
+### Option 2: Use OpenRouter (Cloud LLM with Free Models)
 
-**Option 1: Update `config.json` directly (⚠️ NOT recommended for production)**
-```json
-"openrouter": {
-  "api_key": "sk-or-v1-YOUR-ACTUAL-KEY",
-  ...
-}
-```
+1. **Create account** at [openrouter.ai](https://openrouter.ai)
+2. **Get API key** (starts with `sk-or-v1-`)
+3. **Update config.json:**
+   ```json
+   "openrouter": {
+     "api_key": "sk-or-v1-YOUR-KEY-HERE",
+     ...
+   }
+   ```
 
-**Option 2: Use environment variables (Recommended)**
+### Option 3: Use OpenAI (GPT-4)
+
+1. **Create account** at [openai.com](https://platform.openai.com)
+2. **Get API key** (starts with `sk-`)
+3. **Update config.json:**
+   ```json
+   "openai": {
+     "api_key": "sk-YOUR-KEY-HERE",
+     ...
+   }
+   ```
+
+### Option 4: Pass API Key at Runtime (Frontend)
+
 ```bash
-# Create .env file in project root
-OPENROUTER_API_KEY=sk-or-v1-YOUR-KEY
-OPENAI_API_KEY=sk-YOUR-KEY
-```
-
-**Option 3: Pass headers at runtime (Recommended for frontend)**
-```bash
-# Send request with x-api-key header
-curl -X POST http://localhost:8000/api/chat \
-  -H "Content-Type: application/json" \
+curl -X POST http://127.0.0.1:8000/api/chat \
   -H "x-api-key: sk-or-v1-YOUR-KEY" \
+  -H "Content-Type: application/json" \
   -d '{"message":"Hello"}'
 ```
 
@@ -260,13 +203,22 @@ curl -X POST http://localhost:8000/api/chat \
 
 ## ▶️ Running the Server
 
-### Start the Server
+### After Setup is Complete
 
-```bash
-python -m uvicorn server:app --host 127.0.0.1 --port 8000
+**Windows (with setup.ps1):**
+```powershell
+.\.env\Scripts\Activate
+python -m uvicorn server:app --reload
 ```
 
-**Expected Output:**
+**macOS/Linux:**
+```bash
+source .env/bin/activate
+python -m uvicorn server:app --reload
+```
+
+### Expected Server Output
+
 ```
 🔄 Loading Whisper model (base)...
 ✅ Whisper model loaded
@@ -276,24 +228,27 @@ INFO:     Uvicorn running on http://127.0.0.1:8000
 INFO:     Application startup complete.
 ```
 
-### Server Configuration Options
+### Configuration Options
 
 ```bash
-# Run on specific port
+# Run on different port
 python -m uvicorn server:app --port 9000
 
-# Enable auto-reload during development
+# Enable auto-reload on file changes
 python -m uvicorn server:app --reload
 
-# Allow external connections (⚠️ use with caution)
+# Allow external connections (use with caution)
 python -m uvicorn server:app --host 0.0.0.0 --port 8000
+
+# View debug logs
+python -m uvicorn server:app --log-level debug
 ```
 
 ---
 
 ## 🔌 API Endpoints
 
-### `POST /api/chat` - Send Message & Get Response
+### `POST /api/chat` - Chat with AI
 
 **Request:**
 ```bash
@@ -312,7 +267,7 @@ curl -X POST http://127.0.0.1:8000/api/chat \
 }
 ```
 
-### `GET /api/listen` - Transcribe Microphone Input
+### `GET /api/listen` - Transcribe Microphone
 
 **Request:**
 ```bash
@@ -345,129 +300,166 @@ curl http://127.0.0.1:8000/api/profile
 }
 ```
 
+### Interactive API Docs
+
+When the server is running, visit:
+- **Swagger UI:** http://127.0.0.1:8000/docs
+- **ReDoc:** http://127.0.0.1:8000/redoc
+
 ---
 
 ## 🔄 Provider Switching
 
-### Switching Providers at Runtime
+The backend intelligently switches between AI providers:
 
-The system supports **intelligent provider switching** with three methods:
+### Default Behavior
+- Uses `default_provider` from config.json
+- Falls back to `fallback_provider` if primary fails
 
-#### Method 1: Send `x-api-key` Header (Recommended)
+### Runtime Override (Frontend)
+Send `x-api-key` header to force a specific provider:
 
 ```bash
-# Uses OpenRouter with provided key
+# Forces OpenRouter with your key
 curl -X POST http://127.0.0.1:8000/api/chat \
   -H "x-api-key: sk-or-v1-YOUR-KEY" \
   -d '{"message":"Hello"}'
 ```
 
-#### Method 2: Use Default Provider
-
-If no runtime key is provided, the system uses the `default_provider` from `config.json`:
-
-```bash
-# Uses default_provider (e.g., openrouter or ollama)
-curl -X POST http://127.0.0.1:8000/api/chat \
-  -d '{"message":"Hello"}'
-```
-
-#### Method 3: Fallback on Failure
-
-If the primary provider fails, the system automatically tries the `fallback_provider`:
-
-1. Primary attempt: `default_provider`
-2. Fallback attempt: `fallback_provider`
-3. Final fallback: Returns error message
-
-### Flow Diagram
+### Provider Selection Flow
 
 ```
-Request Received
-      ↓
-Is x-api-key Header Present?
-      ├─ YES → Force OpenRouter with provided key
-      └─ NO → Use default_provider from config.json
-            ↓
-      Primary Provider Succeeds?
-            ├─ YES → Return Response
-            └─ NO → Try fallback_provider
-                  ├─ YES → Return Response
-                  └─ NO → Return Error
+Request with x-api-key header?
+    ├─ YES → Use OpenRouter with provided key
+    └─ NO → Use default_provider
+          ↓
+    Primary provider succeeds?
+          ├─ YES → Return response
+          └─ NO → Try fallback_provider
+                ├─ YES → Return response
+                └─ NO → Return error
 ```
 
 ---
 
 ## 🐛 Troubleshooting
 
-### Issue 1: "ModuleNotFoundError: No module named 'X'"
+### Issue: "ModuleNotFoundError: No module named 'whisper'"
 
-**Cause:** Dependencies not installed or virtual environment not activated
+**Fix:** Reinstall dependencies
+```powershell
+# Activate environment first
+.\.env\Scripts\Activate
 
-**Fix:**
-```bash
-# Activate virtual environment
-# Windows:
-.env\Scripts\Activate
-# macOS/Linux:
-source .env/bin/activate
-
-# Reinstall dependencies
+# Reinstall
 pip install -r requirements.txt
 ```
 
 ---
 
-### Issue 2: "OSError: [Errno -9997] Invalid number of channels"
+### Issue: "OSError: [Errno -9997] Invalid number of channels"
 
-**Cause:** PyAudio not properly configured or audio device not detected
+**Cause:** PyAudio misconfiguration or no microphone detected
 
-**Fix:**
-```bash
-# Reinstall PyAudio
+**Fix:** Reinstall PyAudio
+```powershell
 pip uninstall pyaudio
 pip install pipwin
 pipwin install pyaudio
 ```
 
-**Alternative (Windows):**
-```bash
-pip install pipwin
-pipwin install pyaudio
-```
-
 ---
 
-### Issue 3: "Connection refused" or "Failed to connect to Ollama"
+### Issue: "Connection refused" to Ollama
 
-**Cause:** Ollama service not running or using wrong port
-
-**Fix:**
+**Fix:** Make sure Ollama is running
 ```bash
-# 1. Check if Ollama is running
+# Terminal 1: Start Ollama
 ollama serve
 
-# 2. In another terminal, verify connection
+# Terminal 2: Verify it's working
 curl http://localhost:11434/api/version
 
-# 3. If using custom Ollama port, update config.json:
-"ollama": {
-  "base_url": "http://localhost:YOUR-PORT/api",
-  ...
-}
+# Terminal 3: Verify model is available
+ollama list
 ```
 
 ---
 
-### Issue 4: "API key invalid" from OpenRouter
+### Issue: "FFmpeg not found" when running Whisper
 
-**Cause:** Invalid or expired API key
+**Fix:** Ensure FFmpeg is in PATH
+```powershell
+# Verify FFmpeg is installed
+ffmpeg -version
+
+# If not found, install via winget
+winget install -e --id Gyan.FFmpeg
+
+# May need to restart PowerShell for PATH update
+```
+
+---
+
+### Issue: "Port 8000 already in use"
+
+**Fix:** Use a different port
+```powershell
+python -m uvicorn server:app --port 8001
+```
+
+Or find and kill the existing process:
+```powershell
+# Find process using port 8000
+netstat -ano | findstr :8000
+
+# Kill it (replace PID with the number from above)
+taskkill /PID <PID> /F
+```
+
+---
+
+### Issue: "torch/CUDA version mismatch"
+
+**Fix:** Use CPU-only PyTorch (simpler for most setups)
+```powershell
+pip uninstall torch
+pip install torch --index-url https://download.pytorch.org/whl/cpu
+```
+
+---
+
+### Issue: "Whisper model download is slow"
+
+**Cause:** First run downloads ~140MB model (1-2 minutes normal)
+
+**Fix:** Model is cached after first download. Subsequent runs are instant.
+
+Pre-download the model manually:
+```python
+python -c "import whisper; whisper.load_model('base')"
+```
+
+---
+
+### Issue: "LLMClient failed to initialize"
+
+**Fix:** Validate config.json syntax
+```powershell
+python -c "import json; json.load(open('config.json')); print('✅ Valid!')"
+```
+
+---
+
+### Issue: "API key invalid" from OpenRouter
+
+**Cause:** Invalid API key or format
 
 **Fix:**
+1. Verify key format starts with `sk-or-v1-`
+2. Check key at https://openrouter.ai/account
+3. Test the key:
 ```bash
-# 1. Verify key format: should start with sk-or-v1-
-# 2. Check API key at https://openrouter.ai/account
-# 3. Test key with curl:
 curl -X POST https://openrouter.ai/api/v1/chat/completions \
   -H "Authorization: Bearer sk-or-v1-YOUR-KEY" \
   -H "Content-Type: application/json" \
@@ -476,116 +468,15 @@ curl -X POST https://openrouter.ai/api/v1/chat/completions \
 
 ---
 
-### Issue 5: "Whisper model not found" or slow first load
-
-**Cause:** Whisper model needs to be downloaded on first run
-
-**Fix:**
-```bash
-# Pre-download model (runs automatically on first request)
-python -c "import whisper; whisper.load_model('base')"
-
-# Takes 1-2 minutes on first run, then cached in ./models/
-```
-
----
-
-### Issue 6: "Port 8000 already in use"
-
-**Cause:** Another service is using port 8000
-
-**Fix:**
-```bash
-# Use a different port
-python -m uvicorn server:app --port 8001
-
-# Or kill the process using port 8000
-# Windows:
-netstat -ano | findstr :8000
-taskkill /PID <PID> /F
-
-# macOS/Linux:
-lsof -ti:8000 | xargs kill -9
-```
-
----
-
-### Issue 7: "No audio device found"
-
-**Cause:** PyAudio can't detect microphone
-
-**Fix:**
-```bash
-# 1. Check audio devices (list all)
-python -c "import pyaudio; p = pyaudio.PyAudio(); [print(f'{i}: {p.get_device_info_by_index(i)[\"name\"]}') for i in range(p.get_device_count())]"
-
-# 2. Set specific device in config or update audio capture code
-
-# 3. On macOS, grant microphone permission:
-# System Preferences → Security & Privacy → Microphone → Allow Python
-```
-
----
-
-### Issue 8: "torch/CUDA version mismatch"
-
-**Cause:** PyTorch CUDA/CPU version conflicts
-
-**Fix:**
-```bash
-# Install CPU-only PyTorch (simpler for most setups)
-pip uninstall torch
-pip install torch --index-url https://download.pytorch.org/whl/cpu
-
-# Or use CUDA if you have GPU
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-```
-
----
-
-### Issue 9: "LLMClient failed to initialize"
-
-**Cause:** `config.json` syntax error or provider misconfiguration
-
-**Fix:**
-```bash
-# 1. Validate JSON syntax
-python -c "import json; json.load(open('config.json'))"
-
-# 2. Check config.json structure (all required fields present)
-
-# 3. Ensure at least one provider has valid configuration
-
-# 4. Restart server
-python -m uvicorn server:app --reload
-```
-
----
-
-### Issue 10: Debug Mode - Enable Verbose Logging
-
-```bash
-# View detailed server logs
-python -m uvicorn server:app --log-level debug
-
-# Or set environment variable
-export LOG_LEVEL=DEBUG
-python -m uvicorn server:app
-```
-
----
-
 ## 📝 Example Usage
 
-### Python Example
+### Python Client
 
 ```python
 import requests
-import json
 
 BASE_URL = "http://127.0.0.1:8000"
 
-# Send message and get response
 def chat(message: str, api_key: str = None):
     headers = {"Content-Type": "application/json"}
     if api_key:
@@ -598,19 +489,19 @@ def chat(message: str, api_key: str = None):
     )
     
     data = response.json()
-    print(f"Provider Used: {data['provider_used']}")
-    print(f"Model Used: {data['model_used']}")
-    print(f"Reply: {data['reply']}")
+    print(f"📍 Provider: {data['provider_used']}")
+    print(f"🤖 Model: {data['model_used']}")
+    print(f"💬 Reply: {data['reply']}")
     return data
 
-# Use default provider
+# Use default provider (Ollama or OpenRouter)
 chat("What is AI?")
 
-# Use OpenRouter with API key
-chat("Explain machine learning", api_key="sk-or-v1-YOUR-KEY")
+# Force OpenRouter
+chat("Explain quantum computing", api_key="sk-or-v1-YOUR-KEY")
 ```
 
-### JavaScript/TypeScript Example
+### JavaScript/TypeScript
 
 ```javascript
 const BASE_URL = "http://127.0.0.1:8000";
@@ -628,8 +519,9 @@ async function chat(message, apiKey = null) {
   });
 
   const data = await response.json();
-  console.log(`Provider: ${data.provider_used}, Model: ${data.model_used}`);
-  console.log(`Reply: ${data.reply}`);
+  console.log(`📍 Provider: ${data.provider_used}`);
+  console.log(`🤖 Model: ${data.model_used}`);
+  console.log(`💬 Reply: ${data.reply}`);
   return data;
 }
 
@@ -644,18 +536,19 @@ await chat("Hello, how are you?");
 1. **Fork the repository**
 2. **Create a feature branch:** `git checkout -b feature/my-feature`
 3. **Make your changes** and test thoroughly
-4. **Commit with clear messages:** `git commit -m "Add feature: description"`
-5. **Push and open a Pull Request**
+4. **Commit:** `git commit -m "feat: Add feature description"`
+5. **Push:** `git push origin feature/my-feature`
+6. **Open a Pull Request**
 
 ---
 
 ## 📄 License
 
-This project is licensed under the **MIT License** — see the LICENSE file for details.
+This project is licensed under the **MIT License**.
 
 ---
 
-## 📞 Support & Contact
+## 📞 Support
 
 - **Issues:** [GitHub Issues](https://github.com/shrutissajeev-boop/voxen_backend/issues)
 - **Email:** shrutissajeev-boop@github.com
@@ -664,10 +557,39 @@ This project is licensed under the **MIT License** — see the LICENSE file for 
 
 ## 🎓 Learning Resources
 
-- [FastAPI Documentation](https://fastapi.tiangolo.com/)
-- [OpenAI Whisper](https://github.com/openai/whisper)
-- [Ollama Documentation](https://ollama.ai)
+- [FastAPI Docs](https://fastapi.tiangolo.com/)
+- [OpenAI Whisper GitHub](https://github.com/openai/whisper)
+- [Ollama Setup Guide](https://ollama.ai)
 - [OpenRouter API Docs](https://openrouter.ai/docs)
+- [pyttsx3 Documentation](https://pyttsx3.readthedocs.io/)
+
+---
+
+## ⭐ Quick Reference
+
+```bash
+# One-command Windows setup
+./setup.ps1
+
+# Activate environment (Windows)
+.\.env\Scripts\Activate
+
+# Activate environment (Mac/Linux)
+source .env/bin/activate
+
+# Run server
+python -m uvicorn server:app --reload
+
+# Run with Ollama
+ollama serve  # in separate terminal
+python -m uvicorn server:app --reload
+
+# Test API
+curl http://127.0.0.1:8000/api/profile
+
+# View interactive docs
+# Open: http://127.0.0.1:8000/docs
+```
 
 ---
 
