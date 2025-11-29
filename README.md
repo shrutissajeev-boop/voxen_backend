@@ -594,3 +594,32 @@ curl http://127.0.0.1:8000/api/profile
 ---
 
 **Happy coding! 🚀**
+---
+
+## Manual installation for optional packages
+
+If the setup script reports messages like the following while checking optional packages:
+
+```
+[INFO] Checking: whisper
+[WARN] whisper is not installed (optional - can be installed manually later)
+[INFO] Checking: torch
+[WARN] torch is not installed (optional - can be installed manually later)
+```
+
+You can install those optional packages manually into the virtual environment using these commands:
+
+```powershell
+# Install Whisper (speech-to-text)
+.\.env\Scripts\python.exe -m pip install openai-whisper
+
+# Install CPU-only PyTorch (recommended for most users without GPU)
+.\.env\Scripts\python.exe -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+```
+
+Notes:
+- If you have a CUDA-capable GPU and want GPU-enabled PyTorch, follow the install instructions at https://pytorch.org and pick the appropriate CUDA wheel.
+- Run these commands from the project root so the `.env` path is correct, and ensure the virtual environment exists.
+
+---
+
