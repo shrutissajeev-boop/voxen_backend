@@ -25,7 +25,7 @@ This script automatically:
 **After setup completes, activate the environment and run:**
 ```powershell
 .\.env\Scripts\Activate
-python -m uvicorn server:app --reload
+python -m uvicorn server:app --reload 8000
 ```
 
 Server runs at: **http://127.0.0.1:8000**
