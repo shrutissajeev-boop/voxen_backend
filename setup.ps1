@@ -166,31 +166,106 @@ Write-Header "Step 9: Validating Installation"
 Write-Info "Checking critical packages..."
 
 $packagesToCheck = @("fastapi", "uvicorn", "pydantic", "requests")
-$criticalOk = $true
 
+# Temporarily allow non-terminating errors while probing imports
+$previousErrorAction = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
+
+$missingCritical = @()
 foreach ($package in $packagesToCheck) {
     python -c "import $package" 2>&1 | Out-Null
     if ($LASTEXITCODE -eq 0) {
         Write-Success "$package is installed"
     } else {
         Write-Error-Custom "$package is NOT installed"
-        $criticalOk = $false
+        $missingCritical += $package
     }
 }
 
 Write-Info "Checking optional/heavy packages..."
 $optionalPackages = @("whisper", "torch")
+$missingOptional = @()
 foreach ($package in $optionalPackages) {
     python -c "import $package" 2>&1 | Out-Null
     if ($LASTEXITCODE -eq 0) {
         Write-Success "$package is installed"
     } else {
         Write-Info "$package not yet installed (may need manual setup)"
+        $missingOptional += $package
     }
 }
 
-if (-not $criticalOk) {
-    Write-Error-Custom "Critical packages are missing!"
+# If there are missing packages, attempt to install them via pip
+if ($missingCritical.Count -gt 0 -or $missingOptional.Count -gt 0) {
+    Write-Header "Attempting to install missing Python packages"
+
+    # Check available disk space on current drive before attempting large installs
+    $currentDrive = (Get-Item .).PSDrive.Name
+    $freeGB = 0
+    try {
+        $freeBytes = (Get-PSDrive -Name $currentDrive).Free
+        $freeGB = [math]::Round($freeBytes / 1GB, 2)
+    } catch {
+        $freeGB = 0
+    }
+
+    if ($freeGB -lt 2) {
+        Write-Error-Custom ("Insufficient disk space on drive {0}: {1} GB free. Please free up space (>=2 GB recommended) and re-run the script." -f $currentDrive, $freeGB)
+        # Restore error action preference before exiting
+        $ErrorActionPreference = $previousErrorAction
+        exit 1
+    }
+
+    # Map import names to pip package names when they differ
+    $pipNameMap = @{ "whisper" = "openai-whisper" }
+
+    $toInstall = $missingCritical + $missingOptional
+    foreach ($pkg in $toInstall) {
+        if ($pipNameMap.ContainsKey($pkg)) {
+            $pipName = $pipNameMap[$pkg]
+        } else {
+            $pipName = $pkg
+        }
+        Write-Info "Installing: $pipName"
+
+        # Use python -m pip to ensure venv pip is used and show output for debugging
+        python -m pip install --no-cache-dir $pipName
+
+        if ($LASTEXITCODE -eq 0) {
+            Write-Success "Installed $pipName"
+        } else {
+            Write-Error-Custom "Failed to install $pipName (see pip output above)"
+        }
+    }
+
+    Write-Info "Re-checking imports after install attempts..."
+    $missingCritical = @()
+    foreach ($package in $packagesToCheck) {
+        python -c "import $package" 2>&1 | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Success "$package is installed"
+        } else {
+            Write-Error-Custom "$package is STILL NOT installed"
+            $missingCritical += $package
+        }
+    }
+
+    # Also re-check optional packages, but don't treat them as fatal unless you want to
+    foreach ($package in $optionalPackages) {
+        python -c "import $package" 2>&1 | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Success "$package is installed"
+        } else {
+            Write-Info "$package not yet installed (may need manual setup)"
+        }
+    }
+}
+
+# Restore original error action preference after all checks and installs
+$ErrorActionPreference = $previousErrorAction
+
+if ($missingCritical.Count -gt 0) {
+    Write-Error-Custom "Critical packages are missing after install attempts: $($missingCritical -join ', ')"
     exit 1
 }
 

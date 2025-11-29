@@ -20,5 +20,3 @@
   "fallback_provider": "ollama",
   "force_cpu": true
 }
-
-
