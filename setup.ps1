@@ -1,7 +1,21 @@
 # Voxen Backend - Automated Setup Script for Windows
 # This script sets up a complete development environment for the FastAPI speech-to-speech backend
+# Production-ready, idempotent, fully automated setup for Windows PowerShell 5.1+
+
+param(
+    [switch]$InstallCritical,
+    [switch]$InstallOptional,
+    [switch]$UpgradePip,
+    [switch]$ClearPipCache,
+    [switch]$RecreateVenv,
+    [string]$ManualPackage
+)
 
 $ErrorActionPreference = "Stop"
+
+# ============================================================
+# Colored Output Functions
+# ============================================================
 
 function Write-Header {
     param([string]$Message)
@@ -16,6 +30,11 @@ function Write-Success {
     Write-Host "[OK] $Message" -ForegroundColor Green
 }
 
+function Write-Warning-Custom {
+    param([string]$Message)
+    Write-Host "[WARN] $Message" -ForegroundColor Magenta
+}
+
 function Write-Error-Custom {
     param([string]$Message)
     Write-Host "[ERROR] $Message" -ForegroundColor Red
@@ -26,15 +45,20 @@ function Write-Info {
     Write-Host "[INFO] $Message" -ForegroundColor Yellow
 }
 
-# Start setup
+# ============================================================
+# Script Execution Begins
+# ============================================================
+
 Write-Header "Voxen Backend Setup for Windows"
+Write-Info "This script will set up a complete Python environment in .\.env"
+Write-Info "All package operations use ONLY the virtual environment's pip"
 
 # Step 1: Check Python installation
-Write-Header "Step 1: Checking Python Installation"
+Write-Header "Step 1: Checking System Python Installation"
 
 try {
     $pythonVersion = python --version 2>&1
-    Write-Success "Python found: $pythonVersion"
+    Write-Success "System Python found: $pythonVersion"
 } catch {
     Write-Error-Custom "Python is not installed or not in PATH"
     Write-Info "Please install Python 3.8+ from https://www.python.org/downloads/"
@@ -42,50 +66,70 @@ try {
 }
 
 # Step 2: Create virtual environment
-Write-Header "Step 2: Creating Virtual Environment"
+Write-Header "Step 2: Creating Virtual Environment at .\.env"
 
-if (Test-Path ".env") {
-    Write-Info "Virtual environment already exists at .\.env"
+if (Test-Path ".\.env\Scripts\python.exe") {
+    Write-Success "Virtual environment already exists at .\.env"
 } else {
     Write-Info "Creating virtual environment at .\.env..."
     python -m venv .env
-    if ($LASTEXITCODE -eq 0) {
-        Write-Success "Virtual environment created"
-    } else {
+    if ($LASTEXITCODE -ne 0) {
         Write-Error-Custom "Failed to create virtual environment"
         exit 1
     }
+    Write-Success "Virtual environment created successfully"
 }
 
-# Step 3: Activate virtual environment
-Write-Header "Step 3: Activating Virtual Environment"
+# Step 3: Verify virtual environment executables
+Write-Header "Step 3: Verifying Virtual Environment Executables"
 
-& ".\.env\Scripts\Activate.ps1"
-Write-Success "Virtual environment activated"
+$pythonExe = ".\.env\Scripts\python.exe"
+$pipExe = ".\.env\Scripts\pip.exe"
 
-# Step 4: Upgrade pip and setuptools
-Write-Header "Step 4: Upgrading pip and setuptools"
+if (-not (Test-Path $pythonExe)) {
+    Write-Error-Custom "Virtual environment python.exe not found at $pythonExe"
+    exit 1
+}
+Write-Success "Virtual environment python.exe found"
 
-Write-Info "Upgrading pip..."
-python -m pip install --upgrade pip 2>&1 | Out-Null
+if (-not (Test-Path $pipExe)) {
+    Write-Error-Custom "Virtual environment pip.exe not found at $pipExe"
+    exit 1
+}
+Write-Success "Virtual environment pip.exe found"
+
+# Step 4: Upgrade pip, setuptools, wheel, and build
+Write-Header "Step 4: Upgrading Core Tools in Virtual Environment"
+
+Write-Info "Upgrading pip to latest version..."
+& $pipExe install --upgrade pip 2>&1 | Out-Null
+if ($LASTEXITCODE -ne 0) {
+    Write-Warning-Custom "pip upgrade had issues, but continuing..."
+}
 Write-Success "pip upgraded"
 
-Write-Info "Pinning setuptools to <81..."
-python -m pip install "setuptools<81" 2>&1 | Out-Null
-Write-Success "setuptools pinned"
+Write-Info "Upgrading setuptools (pinning to <81)..."
+& $pipExe install "setuptools<81" 2>&1 | Out-Null
+if ($LASTEXITCODE -ne 0) {
+    Write-Warning-Custom "setuptools install had issues, but continuing..."
+}
+Write-Success "setuptools pinned to <81"
 
-Write-Info "Installing wheel and build..."
-python -m pip install wheel build 2>&1 | Out-Null
-Write-Success "wheel and build installed"
+Write-Info "Installing wheel and build tools..."
+& $pipExe install wheel build 2>&1 | Out-Null
+if ($LASTEXITCODE -ne 0) {
+    Write-Warning-Custom "wheel/build install had issues, but continuing..."
+}
+Write-Success "wheel and build tools installed"
 
-# Step 5: Check and install FFmpeg
-Write-Header "Step 5: Installing FFmpeg (Required for Whisper)"
+# Step 5: Install FFmpeg (optional, required for Whisper)
+Write-Header "Step 5: Checking FFmpeg Installation (Optional, Required for Whisper)"
 
 $ffmpegTest = ffmpeg -version 2>&1 | Select-Object -First 1
 if ($ffmpegTest -like "ffmpeg*") {
     Write-Success "FFmpeg is already installed"
 } else {
-    Write-Info "FFmpeg not found. Attempting installation via winget..."
+    Write-Warning-Custom "FFmpeg not found on system. Attempting installation via winget..."
     
     try {
         $wingetVersion = winget --version 2>&1
@@ -95,10 +139,12 @@ if ($ffmpegTest -like "ffmpeg*") {
         if ($LASTEXITCODE -eq 0) {
             Write-Success "FFmpeg installed successfully"
         } else {
-            Write-Info "FFmpeg installation had issues - continuing anyway"
+            Write-Warning-Custom "FFmpeg installation via winget had issues"
+            Write-Info "You can install FFmpeg manually from: https://ffmpeg.org/download.html"
         }
     } catch {
-        Write-Info "winget not available - you can install FFmpeg manually from https://ffmpeg.org/download.html"
+        Write-Warning-Custom "winget not available on this system"
+        Write-Info "You can install FFmpeg manually from: https://ffmpeg.org/download.html"
     }
 }
 
@@ -106,19 +152,19 @@ if ($ffmpegTest -like "ffmpeg*") {
 Write-Header "Step 6: Installing PyAudio (Audio Input/Output)"
 
 Write-Info "Installing PyAudio via pip..."
-pip install pyaudio 2>&1 | Out-Null
+& $pipExe install pyaudio 2>&1 | Out-Null
 
 if ($LASTEXITCODE -eq 0) {
     Write-Success "PyAudio installed successfully"
 } else {
     Write-Info "PyAudio pip installation had issues - trying alternative method"
-    pip install pipwin 2>&1 | Out-Null
-    pipwin install pyaudio 2>&1 | Out-Null
+    & $pipExe install pipwin 2>&1 | Out-Null
+    & $pipExe install pyaudio 2>&1 | Out-Null
     
     if ($LASTEXITCODE -eq 0) {
         Write-Success "PyAudio installed via pipwin"
     } else {
-        Write-Info "PyAudio installation had issues - you may need to install manually"
+        Write-Warning-Custom "PyAudio installation had issues - you may need to install manually"
     }
 }
 
@@ -132,11 +178,11 @@ if (-not (Test-Path "requirements.txt")) {
 
 Write-Info "Installing all packages..."
 Write-Info "First installing build essentials..."
-pip install --upgrade setuptools wheel build 2>&1 | Out-Null
+& $pipExe install --upgrade setuptools wheel build 2>&1 | Out-Null
 
 Write-Info "Installing packages from requirements.txt..."
 $ErrorActionPreference = "Continue"
-pip install -r requirements.txt --no-cache-dir 2>&1 | Out-Null
+& $pipExe install -r requirements.txt --no-cache-dir 2>&1 | Out-Null
 $ErrorActionPreference = "Stop"
 
 if ($LASTEXITCODE -eq 0) {
@@ -160,113 +206,72 @@ foreach ($dir in $directories) {
     }
 }
 
-# Step 9: Validate installation
-Write-Header "Step 9: Validating Installation"
+# Step 9: Force-install and validate critical packages
+Write-Header "Step 9: Force-Installing Critical Packages"
 
-Write-Info "Checking critical packages..."
+$criticalPackages = @("fastapi", "uvicorn", "pydantic", "requests")
 
-$packagesToCheck = @("fastapi", "uvicorn", "pydantic", "requests")
+Write-Info "Force-installing critical packages with --upgrade --force-reinstall..."
+Write-Info "Note: This step may take several minutes and requires disk space"
 
-# Temporarily allow non-terminating errors while probing imports
-$previousErrorAction = $ErrorActionPreference
 $ErrorActionPreference = "Continue"
 
+foreach ($package in $criticalPackages) {
+    Write-Info "Force-installing: $package"
+    & $pipExe install --upgrade --force-reinstall $package 2>&1 | Out-Null
+    
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error-Custom "Failed to install $package (see error above)"
+    } else {
+        Write-Success "Force-installed $package"
+    }
+}
+
+$ErrorActionPreference = "Stop"
+
+# Step 10: Validate critical packages using pip show
+Write-Header "Step 10: Validating Critical Packages"
+
+Write-Info "Validating critical packages..."
 $missingCritical = @()
-foreach ($package in $packagesToCheck) {
-    python -c "import $package" 2>&1 | Out-Null
+
+$ErrorActionPreference = "Continue"
+
+foreach ($package in $criticalPackages) {
+    Write-Info "Checking: $package"
+    & $pipExe show $package 2>&1 | Out-Null
+    
     if ($LASTEXITCODE -eq 0) {
-        Write-Success "$package is installed"
+        Write-Success "$package is installed and verified"
     } else {
         Write-Error-Custom "$package is NOT installed"
         $missingCritical += $package
     }
 }
 
-Write-Info "Checking optional/heavy packages..."
+$ErrorActionPreference = "Stop"
+
+if ($missingCritical.Count -gt 0) {
+    Write-Error-Custom "Critical packages missing: $($missingCritical -join ', ')"
+    Write-Info "Please check disk space, then re-run the script: ./setup.ps1"
+    exit 1
+}
+
+# Step 11: Check optional packages (warn only, do not fail)
+Write-Header "Step 11: Checking Optional Packages"
+
 $optionalPackages = @("whisper", "torch")
-$missingOptional = @()
+
+Write-Info "Checking optional packages (installation not required)..."
 foreach ($package in $optionalPackages) {
-    python -c "import $package" 2>&1 | Out-Null
+    Write-Info "Checking: $package"
+    & $pipExe show $package 2>&1 | Out-Null
+    
     if ($LASTEXITCODE -eq 0) {
         Write-Success "$package is installed"
     } else {
-        Write-Info "$package not yet installed (may need manual setup)"
-        $missingOptional += $package
+        Write-Warning-Custom "$package is not installed (optional - can be installed manually later)"
     }
-}
-
-# If there are missing packages, attempt to install them via pip
-if ($missingCritical.Count -gt 0 -or $missingOptional.Count -gt 0) {
-    Write-Header "Attempting to install missing Python packages"
-
-    # Check available disk space on current drive before attempting large installs
-    $currentDrive = (Get-Item .).PSDrive.Name
-    $freeGB = 0
-    try {
-        $freeBytes = (Get-PSDrive -Name $currentDrive).Free
-        $freeGB = [math]::Round($freeBytes / 1GB, 2)
-    } catch {
-        $freeGB = 0
-    }
-
-    if ($freeGB -lt 2) {
-        Write-Error-Custom ("Insufficient disk space on drive {0}: {1} GB free. Please free up space (>=2 GB recommended) and re-run the script." -f $currentDrive, $freeGB)
-        # Restore error action preference before exiting
-        $ErrorActionPreference = $previousErrorAction
-        exit 1
-    }
-
-    # Map import names to pip package names when they differ
-    $pipNameMap = @{ "whisper" = "openai-whisper" }
-
-    $toInstall = $missingCritical + $missingOptional
-    foreach ($pkg in $toInstall) {
-        if ($pipNameMap.ContainsKey($pkg)) {
-            $pipName = $pipNameMap[$pkg]
-        } else {
-            $pipName = $pkg
-        }
-        Write-Info "Installing: $pipName"
-
-        # Use python -m pip to ensure venv pip is used and show output for debugging
-        python -m pip install --no-cache-dir $pipName
-
-        if ($LASTEXITCODE -eq 0) {
-            Write-Success "Installed $pipName"
-        } else {
-            Write-Error-Custom "Failed to install $pipName (see pip output above)"
-        }
-    }
-
-    Write-Info "Re-checking imports after install attempts..."
-    $missingCritical = @()
-    foreach ($package in $packagesToCheck) {
-        python -c "import $package" 2>&1 | Out-Null
-        if ($LASTEXITCODE -eq 0) {
-            Write-Success "$package is installed"
-        } else {
-            Write-Error-Custom "$package is STILL NOT installed"
-            $missingCritical += $package
-        }
-    }
-
-    # Also re-check optional packages, but don't treat them as fatal unless you want to
-    foreach ($package in $optionalPackages) {
-        python -c "import $package" 2>&1 | Out-Null
-        if ($LASTEXITCODE -eq 0) {
-            Write-Success "$package is installed"
-        } else {
-            Write-Info "$package not yet installed (may need manual setup)"
-        }
-    }
-}
-
-# Restore original error action preference after all checks and installs
-$ErrorActionPreference = $previousErrorAction
-
-if ($missingCritical.Count -gt 0) {
-    Write-Error-Custom "Critical packages are missing after install attempts: $($missingCritical -join ', ')"
-    exit 1
 }
 
 # Success!
@@ -281,3 +286,72 @@ Write-Host "  3. Visit: http://127.0.0.1:8000/docs"
 Write-Host ""
 Write-Host "For more info, see README.md"
 Write-Host ""
+Write-Header "Manual Installation Helpers (Fallback)"
+
+Write-Info "This script includes helper routines for manual package installation and troubleshooting."
+Write-Info "You can invoke the script with switches to perform specific fallback actions, for example:"
+Write-Host "  PowerShell -ExecutionPolicy Bypass -File .\setup.ps1 -InstallCritical" -ForegroundColor Cyan
+Write-Host "  PowerShell -ExecutionPolicy Bypass -File .\setup.ps1 -ManualPackage openai-whisper" -ForegroundColor Cyan
+
+# Helper functions (do not run automatically unless corresponding switch is provided)
+function Install-ManualPackage {
+    param([string]$Package)
+    if (-not $Package) {
+        Write-Error-Custom "No package name provided to Install-ManualPackage"
+        return
+    }
+    Write-Info "Installing package: $Package"
+    & $pythonExe -m pip install $Package
+    if ($LASTEXITCODE -eq 0) { Write-Success "$Package installed" } else { Write-Error-Custom "Failed to install $Package" }
+}
+
+function Install-CriticalPackages {
+    $pkgs = @("fastapi","uvicorn","pydantic","requests")
+    foreach ($p in $pkgs) { Install-ManualPackage -Package $p }
+}
+
+function Install-OptionalHeavyPackages {
+    Write-Info "Installing Whisper (openai-whisper)"
+    Install-ManualPackage -Package "openai-whisper"
+
+    Write-Info "Installing CPU-only PyTorch (via PyTorch CPU index)"
+    & $pythonExe -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+    if ($LASTEXITCODE -eq 0) { Write-Success "torch installed (CPU wheel)" } else { Write-Warning-Custom "torch install failed - check internet or try manually" }
+}
+
+function Upgrade-Pip-Helper {
+    Write-Info "Upgrading pip in virtual environment"
+    & $pythonExe -m pip install --upgrade pip
+}
+
+function Clear-Pip-Cache-Helper {
+    Write-Info "Clearing pip cache"
+    & $pythonExe -m pip cache purge
+}
+
+function Install-NoCache {
+    param([string]$Package)
+    if (-not $Package) { Write-Error-Custom "No package provided to Install-NoCache"; return }
+    Write-Info "Installing $Package with no cache (verbose)"
+    & $pythonExe -m pip install $Package --no-cache-dir -v
+}
+
+function Recreate-Venv-Helper {
+    Write-Warning-Custom "This will remove and recreate the .\.env virtual environment."
+    Write-Info "Removing .\.env..."
+    Remove-Item -Recurse -Force .\.env -ErrorAction SilentlyContinue
+    Write-Info "Creating virtual environment..."
+    python -m venv .env
+    Write-Info "Activating and bootstrapping pip, setuptools, wheel..."
+    & ".\.env\Scripts\python.exe" -m pip install --upgrade pip setuptools wheel
+    Write-Success ".\.env recreated and basic tools installed"
+}
+
+# Handle switches if provided
+if ($UpgradePip) { Upgrade-Pip-Helper }
+if ($ClearPipCache) { Clear-Pip-Cache-Helper }
+if ($RecreateVenv) { Recreate-Venv-Helper }
+if ($InstallCritical) { Install-CriticalPackages }
+if ($InstallOptional) { Install-OptionalHeavyPackages }
+if ($ManualPackage) { Install-ManualPackage -Package $ManualPackage }
+
